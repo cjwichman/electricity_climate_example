@@ -13,22 +13,22 @@ ssc install eclplot
 
 
 * change this to directory to your machine
-global dir = "/Users/casey/Documents/GitHub/electricity_climate_example/"
+global dir = "/Users/casey/Dropbox/teaching/_FALL2022/ECON4803CW1/misc/energy_data/"
 cd $dir
 
 
 
 * pull in raw daily kwh data downloaded from Georgia Power
-qui forv i = 1/11 {
-	import excel using "rawdata/kwh`i'.xlsx", clear first
-	rename DailyCost kwh
+forv i = 1/23 {
+	import excel using "rawdata/k`i'.xlsx", clear first
+	rename Cost kwh
 	destring kwh HighTemp LowTemp, replace force
 	save "cleandata/kwh`i'.dta", replace
 }
 
 * append files together
 clear
-forv i = 1/11{
+forv i = 1/23{
 	append using "cleandata/kwh`i'.dta"
 }
 
@@ -38,21 +38,14 @@ drop if missing(HighTemp)
 drop if missing(LowTemp)
 
 * create some useful variables
-rename Day DayofWeek
-g dow = 0
-replace dow = 1 if DayofWeek == "Monday"
-replace dow = 2 if DayofWeek == "Tuesday"
-replace dow = 3 if DayofWeek == "Wednesday"
-replace dow = 4 if DayofWeek == "Thursday"
-replace dow = 5 if DayofWeek == "Friday"
-replace dow = 6 if DayofWeek == "Saturday"
+g date = date(Day,"YMD")
+g dow = dow(date)
 
-split Date, parse("/")
-destring Date1-Date3, replace
-rename Date1 month
-rename Date2 day
-rename Date3 year
+g year = year(date)
+g month = month(date)
+g day = day(date)
 
+sort date
 g dayofsample = _n
 g atemp = 0.5*(HighTemp + LowTemp)
 
@@ -149,7 +142,13 @@ g climate_damages = kwh_future - kwh_now
 sum climate_damages
 hist climate_damages
 
+* pct change
+sum kwh_now, meanonly
+local mm = r(mean)
+sum climate_damages, meanonly
+local nn = r(mean)
 
+di `nn'/`mm'
 
 
 * plot temp-squared prediction
